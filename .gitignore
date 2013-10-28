@@ -1,6 +1,7 @@
 # compilation results #
 #######################
 *.o
+*.d
 *.a
 *.bin
 *.elf
