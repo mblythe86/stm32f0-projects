@@ -80,7 +80,7 @@ $(PROJ_NAME).elf: $(OBJS)
 	$(SIZE) $(PROJ_NAME).elf
 	
 program: all
-	openocd -f $(OPENOCD_BOARD_DIR)/stm32f0discovery.cfg -f $(OPENOCD_PROC_FILE) -c "stm_flash `pwd`/$(PROJ_NAME).bin" -c shutdown
+	openocd -f $(OPENOCD_BOARD_DIR)/stm32f0discovery.cfg -f $(OPENOCD_PROC_FILE) -c "stm_flash \"`pwd`/$(PROJ_NAME).bin\"" -c shutdown
 
 debug: program
 	$(GDB) -x extra/gdb_cmds $(PROJ_NAME).elf
