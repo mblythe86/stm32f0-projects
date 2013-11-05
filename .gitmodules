@@ -1,0 +1,3 @@
+[submodule "src/pid"]
+	path = src/pid
+	url = git@github.com:mblythe86/C-PID-Library.git
