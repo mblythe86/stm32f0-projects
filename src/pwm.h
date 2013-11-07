@@ -10,7 +10,7 @@
 
 #include "stm32f0xx_conf.h"
 
-void pwn_init();
+void pwm_init();
 
 void pwm_set_width(uint32_t width, uint32_t channel);
 void pwm_add_width(uint32_t width, uint32_t channel);

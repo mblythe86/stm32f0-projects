@@ -2,6 +2,7 @@
 #include "lcd.h"
 #include "encoder.h"
 #include "pwm.h"
+#include "pid.h"
 
 static __IO uint32_t TimingDelay;
 
@@ -28,16 +29,33 @@ void TimingDelay_Decrement(void) {
   }
 }
 
-void PwmStuff(void) {
-//  pwm_add_width(65,1);
-//  pwm_sub_width(65,2);
-  pwm_add_width(30,1);
-  pwm_sub_width(30,2);
-}
+//void PwmStuff(void) {
+////  pwm_add_width(65,1);
+////  pwm_sub_width(65,2);
+//  pwm_add_width(30,1);
+//  pwm_sub_width(30,2);
+//}
+
+int PidCount = 0;
+PidType pid1;
+PidType pid2;
 
 void SysTick_Handler(void) {
+  //only do this every 100 ms (0.1s)
+  if(PidCount++ == 10){
+    PidCount = 0;
+
+    pid1.myInput = get_position(TIM3); //FIXME
+    PID_Compute(&pid1);
+    pwm_set_width(pid1.myOutput, 1);
+
+
+    pid2.myInput = get_position(TIM3);
+    PID_Compute(&pid2);
+    pwm_set_width(pid2.myOutput, 2);
+  }
   TimingDelay_Decrement();
-  PwmStuff();
+//  PwmStuff();
 }
 
 int main(void) {
@@ -46,9 +64,16 @@ int main(void) {
   RCC_GetClocksFreq(&RCC_Clocks);
   SysTick_Config(RCC_Clocks.HCLK_Frequency / 1000);
 
+  PID_init(&pid1, 0x100, 0x20, 0x100, PID_Direction_Direct);
+  PID_init(&pid2, 10, 2, 1, PID_Direction_Direct);
   lcd_init();
   encoder_init();
   pwm_init();
+  pwm_set_width(0, 1);
+  pwm_set_width(0, 2);
+  //turn the PID on
+  PID_SetMode(&pid1,PID_Mode_Automatic);
+  PID_SetMode(&pid2,PID_Mode_Automatic);
 
 //  GPIO_InitTypeDef GPIO_InitStructure;
 //  RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOC, ENABLE);
@@ -76,16 +101,36 @@ int main(void) {
 //  GPIOC->MODER = (1 << 16);
 
 
-
+  int counter = 0;
   while (1){
     lcd_line_one();
-    lcd_write_string("TIM2: ");
-    lcd_write_int16(get_position(TIM2));
-    lcd_write_string("  ");
-    lcd_line_two();
+//    lcd_write_string("TIM2: ");
+//    lcd_write_int16(get_position(TIM2));
+//    lcd_write_string("  ");
+//    lcd_line_two();
     lcd_write_string("TIM3: ");
     lcd_write_int16(get_position(TIM3));
     lcd_write_string("  ");
+    lcd_line_two();
+    lcd_write_string("pid set: ");
+    lcd_write_int16(pid1.mySetpoint);
+    lcd_write_string("   ");
+    lcd_line_three();
+    lcd_write_string("pid in:  ");
+    lcd_write_int16(pid1.myInput);
+    lcd_write_string("   ");
+    lcd_line_four();
+    lcd_write_string("pid out: ");
+    lcd_write_int16(pid1.myOutput);
+    lcd_write_string("   ");
+    if(counter++ == 40){
+      pid1.mySetpoint = 100;
+      pid2.mySetpoint = 100;
+    }else if(counter == 80){
+      pid1.mySetpoint = 0;
+      pid2.mySetpoint = 0;
+      counter = 0;
+    }
     delay_ms(100);
   }
 

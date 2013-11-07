@@ -45,10 +45,10 @@ void pwm_init() {
   TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;
   TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
   TIM_OCInitStructure.TIM_OutputNState = TIM_OutputNState_Enable;
-  TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_Low;
-  TIM_OCInitStructure.TIM_OCNPolarity = TIM_OCNPolarity_High;
-  TIM_OCInitStructure.TIM_OCIdleState = TIM_OCIdleState_Set;
-  TIM_OCInitStructure.TIM_OCNIdleState = TIM_OCIdleState_Reset;
+  TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
+  TIM_OCInitStructure.TIM_OCNPolarity = TIM_OCNPolarity_Low;
+  TIM_OCInitStructure.TIM_OCIdleState = TIM_OCIdleState_Reset;
+  TIM_OCInitStructure.TIM_OCNIdleState = TIM_OCIdleState_Set;
 
   TIM_OCInitStructure.TIM_Pulse = 0;
   TIM_OC1Init(TIM15, &TIM_OCInitStructure);
@@ -65,10 +65,12 @@ void pwm_init() {
 
 void pwm_set_width(uint32_t width, uint32_t channel){
   if(channel == 1){
-    TIM_SetCompare1(TIM15, width);
+//    TIM_SetCompare1(TIM15, width);
+    TIM15->CCR1 = width;
   }
   else if(channel == 2){
-    TIM_SetCompare2(TIM15, width);
+//    TIM_SetCompare2(TIM15, width);
+    TIM15->CCR2 = width;
   }
   else{
     //error?
