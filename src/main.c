@@ -45,14 +45,15 @@ void SysTick_Handler(void) {
   if(PidCount++ == 10){
     PidCount = 0;
 
-    pid1.myInput = get_position(TIM3); //FIXME
+    pid1.myInput = (int16_t)get_position(TIM3); //FIXME
     PID_Compute(&pid1);
     pwm_set_width(pid1.myOutput, 1);
+    pwm_set_width(pid1.myOutput, 2);
 
 
     pid2.myInput = get_position(TIM3);
     PID_Compute(&pid2);
-    pwm_set_width(pid2.myOutput, 2);
+//    pwm_set_width(pid2.myOutput, 2);
   }
   TimingDelay_Decrement();
 //  PwmStuff();
@@ -64,7 +65,10 @@ int main(void) {
   RCC_GetClocksFreq(&RCC_Clocks);
   SysTick_Config(RCC_Clocks.HCLK_Frequency / 1000);
 
-  PID_init(&pid1, 0x100, 0x20, 0x100, PID_Direction_Direct);
+  int kp = 0x180;
+  int ki = kp/20;
+  int kd = kp/4;
+  PID_init(&pid1, kp, ki, kd, PID_Direction_Direct);
   PID_init(&pid2, 10, 2, 1, PID_Direction_Direct);
   lcd_init();
   encoder_init();
@@ -109,7 +113,8 @@ int main(void) {
 //    lcd_write_string("  ");
 //    lcd_line_two();
     lcd_write_string("TIM3: ");
-    lcd_write_int16(get_position(TIM3));
+    float pos = get_position(TIM3);
+    lcd_write_int16(pos);
     lcd_write_string("  ");
     lcd_line_two();
     lcd_write_string("pid set: ");
@@ -121,7 +126,8 @@ int main(void) {
     lcd_write_string("   ");
     lcd_line_four();
     lcd_write_string("pid out: ");
-    lcd_write_int16(pid1.myOutput);
+    uint16_t out = pid1.myOutput;
+    lcd_write_int16_hex(out);
     lcd_write_string("   ");
     if(counter++ == 40){
       pid1.mySetpoint = 100;

@@ -44,6 +44,6 @@ void encoder_init() {
   // initialize counter values?
 }
 
-uint32_t get_position(TIM_TypeDef* TIMx) {
+int32_t get_position(TIM_TypeDef* TIMx) {
   return TIM_GetCounter(TIMx);
 }

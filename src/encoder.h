@@ -11,6 +11,6 @@
 #include "stm32f0xx_conf.h"
 
 void encoder_init();
-uint32_t get_position(TIM_TypeDef* TIMx);
+int32_t get_position(TIM_TypeDef* TIMx);
 
 #endif /* ENCODER_H_ */

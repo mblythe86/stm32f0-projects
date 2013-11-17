@@ -16,6 +16,7 @@ void lcd_clear_and_home();
 void lcd_home();
 void lcd_write_data(char c);
 void lcd_write_int16(int16_t in);
+void lcd_write_int16_hex(uint16_t in);
 void lcd_write_int16_centi(int16_t in);
 void lcd_write_string(const char *x);
 void lcd_line_one();

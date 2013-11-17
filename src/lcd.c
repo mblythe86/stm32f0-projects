@@ -111,6 +111,22 @@ void lcd_write_int16(int16_t in) {
 
 }
 
+// lcd_write_int16
+void lcd_write_int16_hex(uint16_t in) {
+  uint8_t started = 0;
+  lcd_write_data('0');
+  lcd_write_data('x');
+  for(int16_t place = 12; place >= 0; place -= 4){
+    uint16_t digit = (in >> (place)) & 0xf;
+    if(digit >= 0xa){
+      lcd_write_data((uint8_t) (digit-0xa) + 'a');
+    }
+    else{
+      lcd_write_data((uint8_t) (digit) + '0');
+    }
+  }
+}
+
 
 // lcd_write_int16_centi
 // assumes that its measured in centi-whatevers
