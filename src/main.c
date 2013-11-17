@@ -50,9 +50,14 @@ void SysTick_Handler(void) {
     pwm_set_width(pid1.myOutput, 1);
     pwm_set_width(pid1.myOutput, 2);
 
+    int16_t kp = get_position(TIM2);
+    kp *= 0x10;
+    if(kp!=pid1.kp && kp > 0){
+      PID_SetTunings(&pid1, kp, 0, 0);
+    }
 
-    pid2.myInput = get_position(TIM3);
-    PID_Compute(&pid2);
+//    pid2.myInput = get_position(TIM3);
+//    PID_Compute(&pid2);
 //    pwm_set_width(pid2.myOutput, 2);
   }
   TimingDelay_Decrement();
@@ -65,11 +70,12 @@ int main(void) {
   RCC_GetClocksFreq(&RCC_Clocks);
   SysTick_Config(RCC_Clocks.HCLK_Frequency / 1000);
 
-  int kp = 0x180;
-  int ki = kp/20;
-  int kd = kp/4;
-  PID_init(&pid1, kp, ki, kd, PID_Direction_Direct);
-  PID_init(&pid2, 10, 2, 1, PID_Direction_Direct);
+//  int kp = 0x200;
+//  int ki = kp/20;
+//  int kd = kp/4;
+//  PID_init(&pid1, kp, ki, kd, PID_Direction_Direct);
+//  PID_init(&pid2, 10, 2, 1, PID_Direction_Direct);
+  PID_init(&pid1, 0, 0, 0, PID_Direction_Direct);
   lcd_init();
   encoder_init();
   pwm_init();
@@ -106,6 +112,8 @@ int main(void) {
 
 
   int counter = 0;
+  pid1.mySetpoint = 50;
+  pid2.mySetpoint = 50;
   while (1){
     lcd_line_one();
 //    lcd_write_string("TIM2: ");
@@ -113,9 +121,12 @@ int main(void) {
 //    lcd_write_string("  ");
 //    lcd_line_two();
     lcd_write_string("TIM3: ");
-    float pos = get_position(TIM3);
+    int16_t pos = get_position(TIM3);
     lcd_write_int16(pos);
-    lcd_write_string("  ");
+    lcd_write_string(" TIM2: ");
+    pos = get_position(TIM2);
+    lcd_write_int16(pos);
+    lcd_write_string(" ");
     lcd_line_two();
     lcd_write_string("pid set: ");
     lcd_write_int16(pid1.mySetpoint);
@@ -130,11 +141,11 @@ int main(void) {
     lcd_write_int16_hex(out);
     lcd_write_string("   ");
     if(counter++ == 40){
-      pid1.mySetpoint = 100;
-      pid2.mySetpoint = 100;
+      pid1.mySetpoint = 150;
+      pid2.mySetpoint = 150;
     }else if(counter == 80){
-      pid1.mySetpoint = 0;
-      pid2.mySetpoint = 0;
+      pid1.mySetpoint = 50;
+      pid2.mySetpoint = 50;
       counter = 0;
     }
     delay_ms(100);
