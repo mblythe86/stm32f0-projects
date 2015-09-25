@@ -1,7 +1,7 @@
 #include "stm32f0xx_conf.h"
 #include "lcd.h"
 #include "encoder.h"
-#include "pwm.h"
+#include "servo.h"
 #include "pid.h"
 
 static __IO uint32_t TimingDelay;
@@ -37,24 +37,33 @@ void TimingDelay_Decrement(void) {
 //}
 
 int PidCount = 0;
+int PwmCount = 0;
 PidType pid1;
 PidType pid2;
 
 void SysTick_Handler(void) {
   //only do this every 100 ms (0.1s)
-  if(PidCount++ == 10){
+  if(PidCount++ == 100){
     PidCount = 0;
+//    PwmCount += 10;
+//    if(PwmCount > 2000){
+//      PwmCount = 1000;
+//    }
+//    servo_set_pos(PwmCount,1);
+//    servo_set_pos(PwmCount,2);
 
-    pid1.myInput = (int16_t)get_position(TIM3); //FIXME
+    pid1.myInput = (int16_t)get_position(TIM2); //FIXME
+    pid2.myInput = (int16_t)get_position(TIM3); //FIXME
     PID_Compute(&pid1);
-    pwm_set_width(pid1.myOutput, 1);
-    pwm_set_width(pid1.myOutput, 2);
+    PID_Compute(&pid2);
+    servo_set_pos(pid1.myOutput, 1);
+    servo_set_pos(pid2.myOutput, 2);
 
-    int16_t kp = get_position(TIM2);
-    kp *= 0x10;
-    if(kp!=pid1.kp && kp > 0){
-      PID_SetTunings(&pid1, kp, 0, 0);
-    }
+//    int16_t kp = get_position(TIM2);
+//    kp *= 0x10;
+//    if(kp!=pid1.kp && kp > 0){
+//      PID_SetTunings(&pid1, kp, 0, 0);
+//    }
 
 //    pid2.myInput = get_position(TIM3);
 //    PID_Compute(&pid2);
@@ -70,17 +79,19 @@ int main(void) {
   RCC_GetClocksFreq(&RCC_Clocks);
   SysTick_Config(RCC_Clocks.HCLK_Frequency / 1000);
 
-//  int kp = 0x200;
-//  int ki = kp/20;
-//  int kd = kp/4;
-//  PID_init(&pid1, kp, ki, kd, PID_Direction_Direct);
-//  PID_init(&pid2, 10, 2, 1, PID_Direction_Direct);
-  PID_init(&pid1, 0, 0, 0, PID_Direction_Direct);
+  int kp = 20;
+  int ki = 0;//kp/20;
+  int kd = 0;//kp/4;
+  PID_init(&pid1, kp, ki, kd, PID_Direction_Direct);
+  PID_init(&pid2, kp, ki, kd, PID_Direction_Direct);
+  PID_SetOutputLimits(&pid1, 1000, 2000);
+  PID_SetOutputLimits(&pid2, 1000, 2000);
+//  PID_init(&pid1, 0, 0, 0, PID_Direction_Direct);
   lcd_init();
   encoder_init();
-  pwm_init();
-  pwm_set_width(0, 1);
-  pwm_set_width(0, 2);
+  servo_init();
+//  pwm_set_width(0, 1);
+//  pwm_set_width(0, 2);
   //turn the PID on
   PID_SetMode(&pid1,PID_Mode_Automatic);
   PID_SetMode(&pid2,PID_Mode_Automatic);
@@ -111,6 +122,7 @@ int main(void) {
 //  GPIOC->MODER = (1 << 16);
 
 
+  // 100 "setpoint units" ~= 8 3/8 inches
   int counter = 0;
   pid1.mySetpoint = 50;
   pid2.mySetpoint = 50;
@@ -137,13 +149,12 @@ int main(void) {
     lcd_write_string("   ");
     lcd_line_four();
     lcd_write_string("pid out: ");
-    uint16_t out = pid1.myOutput;
-    lcd_write_int16_hex(out);
+    lcd_write_int16(pid1.myOutput);
     lcd_write_string("   ");
-    if(counter++ == 40){
+    if(counter++ == 60){
       pid1.mySetpoint = 150;
       pid2.mySetpoint = 150;
-    }else if(counter == 80){
+    }else if(counter == 120){
       pid1.mySetpoint = 50;
       pid2.mySetpoint = 50;
       counter = 0;

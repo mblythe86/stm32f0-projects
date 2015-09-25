@@ -1,18 +1,18 @@
 /*
- * pwm.c
+ * servo.c
  *
  *  Created on: Oct 27, 2012
  *      Author: matt
  */
 
-#include "pwm.h"
+#include "servo.h"
 
 // Pin Definitions:
 
 // PA2 - Timer 15 Channel 1 (AF0)
 // PA3 - Timer 15 Channel 2 (AF0)
 
-void pwm_init() {
+void servo_init() {
   // Enable the GPIO Clocks
   RCC_AHBPeriphClockCmd( RCC_AHBPeriph_GPIOA, ENABLE);
 
@@ -31,10 +31,19 @@ void pwm_init() {
   RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM15, ENABLE);
 
   /* Time Base configuration */
+  /*
+   * ok, so we want a 1-2ms pulse every 20ms
+   * the internal clock is 48MHz, so if we divide by a /48 prescaler,
+   * we get a 1MHZ counter clock so,
+   *  20ms repeat = 20,000 count
+   *   1ms pulse = 1000 count
+   * 1.5ms pulse = 1500 count
+   *   2ms pulse = 2000 count
+   */
   TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
-  TIM_TimeBaseStructure.TIM_Prescaler = 0;
+  TIM_TimeBaseStructure.TIM_Prescaler = 47; //48 = 47+1
   TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
-  TIM_TimeBaseStructure.TIM_Period = 0xffff;
+  TIM_TimeBaseStructure.TIM_Period = 20000;
   TIM_TimeBaseStructure.TIM_ClockDivision = 0;
   TIM_TimeBaseStructure.TIM_RepetitionCounter = 0;
 
@@ -47,13 +56,13 @@ void pwm_init() {
   TIM_OCInitStructure.TIM_OutputNState = TIM_OutputNState_Enable;
   TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
   TIM_OCInitStructure.TIM_OCNPolarity = TIM_OCNPolarity_Low;
-  TIM_OCInitStructure.TIM_OCIdleState = TIM_OCIdleState_Reset;
-  TIM_OCInitStructure.TIM_OCNIdleState = TIM_OCIdleState_Set;
+  TIM_OCInitStructure.TIM_OCIdleState = TIM_OCIdleState_Set;
+  TIM_OCInitStructure.TIM_OCNIdleState = TIM_OCIdleState_Reset;
 
-  TIM_OCInitStructure.TIM_Pulse = 0;
+  TIM_OCInitStructure.TIM_Pulse = 1500;
   TIM_OC1Init(TIM15, &TIM_OCInitStructure);
 
-  TIM_OCInitStructure.TIM_Pulse = 0xffff;
+  TIM_OCInitStructure.TIM_Pulse = 1500;
   TIM_OC2Init(TIM15, &TIM_OCInitStructure);
 
   /* TIM1 counter enable */
@@ -63,60 +72,16 @@ void pwm_init() {
   TIM_CtrlPWMOutputs(TIM15, ENABLE);
 }
 
-void pwm_set_width(uint32_t width, uint32_t channel){
-  if(channel == 1){
-//    TIM_SetCompare1(TIM15, width);
-    TIM15->CCR1 = width;
+void servo_set_pos(uint32_t pos, uint32_t servo){
+  if(servo == 1){
+//    TIM_SetCompare2(TIM3, pos);
+    TIM15->CCR1 = pos;
   }
-  else if(channel == 2){
-//    TIM_SetCompare2(TIM15, width);
-    TIM15->CCR2 = width;
-  }
-  else{
-    //error?
-  }
-}
-
-void pwm_add_width(uint32_t width, uint32_t channel){
-  uint32_t val;
-  if(channel == 1){
-    val = TIM15->CCR1 + width;
-    if(val > 0xffff){
-      val = 0;
-    }
-    TIM15->CCR1 = val;
-  }
-  else if(channel == 2){
-    val = TIM15->CCR2 + width;
-    if(val > 0xffff){
-      val = 0;
-    }
-    TIM15->CCR2 = val;
+  else if(servo == 2){
+    TIM15->CCR2 = pos;
   }
   else{
     //error?
   }
 }
 
-void pwm_sub_width(uint32_t width, uint32_t channel){
-  uint32_t val;
-  if(channel == 1){
-    if(TIM15->CCR1 < width){
-      TIM15->CCR1 = 0xffff;
-    }
-    else {
-      TIM15->CCR1 = TIM15->CCR1 - width;
-    }
-  }
-  else if(channel == 2){
-    if(TIM15->CCR2 < width){
-      TIM15->CCR2 = 0xffff;
-    }
-    else {
-      TIM15->CCR2 = TIM15->CCR2 - width;
-    }
-  }
-  else{
-    //error?
-  }
-}
