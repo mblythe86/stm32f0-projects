@@ -1,5 +1,5 @@
 # put your *.c source files here, make should handle the rest!
-SRCS = main.c system_stm32f0xx.c lcd.c encoder.c servo.c pid.c
+SRCS = main.c system_stm32f0xx.c lcd.c encoder.c servo.c pid.c ir_remote.c
 
 # all the files will be generated with this name (main.elf, main.bin, main.hex, etc)
 PROJ_NAME=main

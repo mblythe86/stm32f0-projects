@@ -3,6 +3,7 @@
 #include "encoder.h"
 #include "servo.h"
 #include "pid.h"
+#include "ir_remote.h"
 
 static __IO uint32_t TimingDelay;
 
@@ -12,7 +13,7 @@ static __IO uint32_t TimingDelay;
  * @retval None
  */
 void delay_ms(__IO uint32_t nTime) {
-  TimingDelay = nTime;
+  TimingDelay = nTime*10;
 
   while (TimingDelay != 0)
     ;
@@ -42,10 +43,14 @@ PidType pid1;
 PidType pid2;
 
 void SysTick_Handler(void) {
-  //FIXME: this will be executed every 0.1 ms, not every ms!!!
+  //this will be executed every 0.1 ms
   //This probably means that we need to do less computation in
   //  the interrupt handler itself!
+
+  do_ir();
+
   //only do this every 100 ms (0.1s)
+  if(0){ //FIXME
   if(PidCount++ == 100){
     PidCount = 0;
 //    PwmCount += 10;
@@ -72,16 +77,16 @@ void SysTick_Handler(void) {
 //    PID_Compute(&pid2);
 //    pwm_set_width(pid2.myOutput, 2);
   }
+  }
   TimingDelay_Decrement();
 //  PwmStuff();
 }
 
 int main(void) {
-  /* SysTick end of count event each 1ms */
-  //FIXME: want this to be every 0.1ms
+  /* SysTick end of count event each 0.1ms */
   RCC_ClocksTypeDef RCC_Clocks;
   RCC_GetClocksFreq(&RCC_Clocks);
-  SysTick_Config(RCC_Clocks.HCLK_Frequency / 1000);
+  SysTick_Config(RCC_Clocks.HCLK_Frequency / 100);
 
   int kp = 20;
   int ki = 0;//kp/20;
@@ -148,12 +153,12 @@ int main(void) {
     lcd_write_int16(pid1.mySetpoint);
     lcd_write_string("   ");
     lcd_line_three();
-    lcd_write_string("pid in:  ");
-    lcd_write_int16(pid1.myInput);
-    lcd_write_string("   ");
-    lcd_line_four();
     lcd_write_string("pid out: ");
     lcd_write_int16(pid1.myOutput);
+    lcd_write_string("   ");
+    lcd_line_four();
+    lcd_write_string("IR code:  ");
+    lcd_write_string(get_code_string(get_ir_code()));
     lcd_write_string("   ");
     if(counter++ == 60){
       pid1.mySetpoint = 150;

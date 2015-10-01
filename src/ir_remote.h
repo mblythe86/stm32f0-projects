@@ -1,4 +1,11 @@
 /*
+ * ir_remote.h
+ *
+ *  Created on: Sept 30, 2015
+ *      Author: matt
+ */
+
+/*
 all signals are active low.  i.e. 1=pulled to ground
 each digit represents approximately 880 microseconds (us)
 Also, all are preceeded and followed by (mostly omitted) zeroes
@@ -17,3 +24,31 @@ Chn up : 101010101011010011010101010 - 111100100000 - 0xf20
 Chn dn : 101100101011010011010101001 - 011100100001 - 0x721
 
 */
+
+#ifndef IR_REMOTE_H_
+#define IR_REMOTE_H_
+
+typedef enum{
+  NO_RESULT,
+  RESULT,
+  IGN_ERROR
+} Ir_return_t;
+
+typedef enum{
+  IR_OK     = 0xf25,
+  IR_UP     = 0x714,
+  IR_DOWN   = 0xf15,
+  IR_LEFT   = 0x716,
+  IR_RIGHT  = 0xf17,
+  IR_VOL_UP = 0xf10,
+  IR_VOL_DN = 0x711,
+  IR_CHN_UP = 0xf20,
+  IR_CHN_DN = 0x721
+} Ir_button_t;
+
+void        ir_init();
+Ir_return_t do_ir();
+int         get_ir_code();
+const char* get_code_string(Ir_button_t);
+
+#endif /* IR_REMOTE_H */
