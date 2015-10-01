@@ -42,6 +42,9 @@ PidType pid1;
 PidType pid2;
 
 void SysTick_Handler(void) {
+  //FIXME: this will be executed every 0.1 ms, not every ms!!!
+  //This probably means that we need to do less computation in
+  //  the interrupt handler itself!
   //only do this every 100 ms (0.1s)
   if(PidCount++ == 100){
     PidCount = 0;
@@ -75,6 +78,7 @@ void SysTick_Handler(void) {
 
 int main(void) {
   /* SysTick end of count event each 1ms */
+  //FIXME: want this to be every 0.1ms
   RCC_ClocksTypeDef RCC_Clocks;
   RCC_GetClocksFreq(&RCC_Clocks);
   SysTick_Config(RCC_Clocks.HCLK_Frequency / 1000);
