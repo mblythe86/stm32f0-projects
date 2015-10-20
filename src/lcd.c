@@ -16,6 +16,8 @@
 #include "stm32f0xx_conf.h"
 void delay_ms(__IO uint32_t nTime);
 
+int8_t lcd_column;
+
 void delay_loop(int a) {
   volatile int i, j;
   for (i = 0; i < a; i++) {
@@ -75,17 +77,22 @@ void lcd_clear_and_home() {
   delay_ms(50);
   lcd_write_byte(0x02);
   delay_ms(50);
+  lcd_column = 0;
 }
 
 void lcd_home() {
   lcd_set_type_command();
   lcd_write_byte(0x02);
   delay_ms(50);
+  lcd_column = 0;
 }
 
 void lcd_write_data(char c) {
-  lcd_set_type_data();
-  lcd_write_byte(c);
+  if( lcd_column <20){
+    lcd_set_type_data();
+    lcd_write_byte(c);
+    lcd_column++;
+  }
 }
 
 // lcd_write_int16
@@ -184,6 +191,7 @@ void lcd_goto_position(uint8_t row, uint8_t col) {
 
 
   lcd_write_byte(0x80 | (row_offset + col));
+  lcd_column = col;
 }
 
 void lcd_line_one()   { lcd_goto_position(0, 0); }
