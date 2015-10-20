@@ -117,9 +117,9 @@ Ir_return_t do_ir(){
         Call_count = 0;
       }
       else if(Call_count > 50){
-        if(pin == 1 && Bits_read == 12){
+        if(pin == 1 && Bits_read == 12 && (Ir_code_next & 0x7c0) == 0x700){
           Ir_valid_code = 1;
-          Ir_code = Ir_code_next;
+          Ir_code = Ir_code_next & 0x3f;
           Ir_state = IDLE;
         }
         else{
@@ -181,6 +181,18 @@ void ir_long(int pin){
 
 const char* get_code_string(Ir_button_t code){
   switch(code){
+    case IR_ZERO: return "ZERO";
+    case IR_ONE: return "ONE";
+    case IR_TWO: return "TWO";
+    case IR_THREE: return "THREE";
+    case IR_FOUR: return "FOUR";
+    case IR_FIVE: return "FIVE";
+    case IR_SIX: return "SIX";
+    case IR_SEVEN: return "SEVEN";
+    case IR_EIGHT: return "EIGHT";
+    case IR_NINE: return "NINE";
+    case IR_PWR: return "PWR";
+    case IR_GO: return "GO";
     case IR_OK: return "OK";
     case IR_UP: return "UP";
     case IR_DOWN: return "DOWN";
@@ -190,6 +202,21 @@ const char* get_code_string(Ir_button_t code){
     case IR_VOL_DN: return "VOL_DN";
     case IR_CHN_UP: return "CHN_UP";
     case IR_CHN_DN: return "CHN_DN";
-    default: return "UNKWN";
+    case IR_BACK: return "BACK";
+    case IR_MENU: return "MENU";
+    case IR_TV: return "TV";
+    case IR_MUTE: return "MUTE";
+    case IR_STOP: return "STOP";
+    case IR_SKIP_PREV: return "SKIP_PREV";
+    case IR_REWIND: return "REWIND";
+    case IR_PAUSE: return "PAUSE";
+    case IR_PLAY: return "PLAY";
+    case IR_FF: return "FF";
+    case IR_SKIP_NEXT: return "SKIP_NEXT";
+    case IR_REC: return "REC";
+    case IR_PREV: return "PREV";
+    case IR_TEXT: return "TEXT";
+    case IR_CC: return "CC";
+    default: return "???";
   }
 }

@@ -86,7 +86,7 @@ int main(void) {
   /* SysTick end of count event each 0.1ms */
   RCC_ClocksTypeDef RCC_Clocks;
   RCC_GetClocksFreq(&RCC_Clocks);
-  SysTick_Config(RCC_Clocks.HCLK_Frequency / 100);
+  SysTick_Config(RCC_Clocks.HCLK_Frequency / 10000);
 
   int kp = 20;
   int ki = 0;//kp/20;
@@ -157,9 +157,11 @@ int main(void) {
     lcd_write_int16(pid1.myOutput);
     lcd_write_string("   ");
     lcd_line_four();
-    lcd_write_string("IR code:  ");
+    lcd_write_string("IR code: ");
     lcd_write_string(get_code_string(get_ir_code()));
-    lcd_write_string("   ");
+    //lcd_write_string(" ");
+    //lcd_write_int16_hex(get_ir_code());
+    lcd_write_string("       ");
     if(counter++ == 60){
       pid1.mySetpoint = 150;
       pid2.mySetpoint = 150;
