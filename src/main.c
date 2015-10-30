@@ -50,8 +50,7 @@ void SysTick_Handler(void) {
   do_ir();
 
   //only do this every 100 ms (0.1s)
-  if(0){ //FIXME
-  if(PidCount++ == 100){
+  if(PidCount++ == 1000){
     PidCount = 0;
 //    PwmCount += 10;
 //    if(PwmCount > 2000){
@@ -77,10 +76,14 @@ void SysTick_Handler(void) {
 //    PID_Compute(&pid2);
 //    pwm_set_width(pid2.myOutput, 2);
   }
-  }
   TimingDelay_Decrement();
 //  PwmStuff();
 }
+
+typedef enum {
+  SPIDER_AUTO,
+  SPIDER_MANUAL
+} Spider_state_t;
 
 int main(void) {
   /* SysTick end of count event each 0.1ms */
@@ -92,7 +95,7 @@ int main(void) {
   int ki = 0;//kp/20;
   int kd = 0;//kp/4;
   PID_init(&pid1, kp, ki, kd, PID_Direction_Direct);
-  PID_init(&pid2, kp, ki, kd, PID_Direction_Direct);
+  PID_init(&pid2, kp, ki, kd, PID_Direction_Reverse);
   PID_SetOutputLimits(&pid1, 1000, 2000);
   PID_SetOutputLimits(&pid2, 1000, 2000);
 //  PID_init(&pid1, 0, 0, 0, PID_Direction_Direct);
@@ -133,11 +136,52 @@ int main(void) {
 
   // 100 "setpoint units" ~= 8 3/8 inches
   int counter = 0;
-  pid1.mySetpoint = 50;
-  pid2.mySetpoint = 50;
+  int last_code = IR_ZERO;
+  int tmp;
+  pid1.mySetpoint = 0;
+  pid2.mySetpoint = 0;
+  Spider_state_t state = SPIDER_MANUAL;
   while (1){
+    tmp = get_ir_code();
+    if(tmp != IR_NOT_NEW){
+      last_code = tmp;
+      if(tmp == IR_PLAY){
+        state = SPIDER_AUTO;
+        counter = 0;
+      }
+      else if(tmp == IR_STOP){
+        state = SPIDER_MANUAL;
+      }
+      else if(state == SPIDER_MANUAL){
+        if(tmp == IR_VOL_UP){
+          pid2.mySetpoint += 10;
+        }
+        else if(tmp == IR_VOL_DN){
+          pid2.mySetpoint -= 10;
+        }
+        else if(tmp == IR_CHN_DN){
+          pid1.mySetpoint -= 10;
+        }
+        else if(tmp == IR_CHN_UP){
+          pid1.mySetpoint += 10;
+        }
+      }
+    }
+    
+    if(state == SPIDER_AUTO){
+	    if(counter++ == 60){ //6 seconds-ish?
+		    pid1.mySetpoint += 100;
+		    pid2.mySetpoint += 100;
+	    }
+	    else if(counter == 120){
+		    pid1.mySetpoint -= 100;
+		    pid2.mySetpoint -= 100;
+		    counter = 0;
+	    }
+    }
+
     lcd_line_one();
-//    lcd_write_string("TIM2: ");
+    //    lcd_write_string("TIM2: ");
 //    lcd_write_int16(get_position(TIM2));
 //    lcd_write_string("  ");
 //    lcd_line_two();
@@ -158,18 +202,10 @@ int main(void) {
     lcd_write_string("   ");
     lcd_line_four();
     lcd_write_string("IR code: ");
-    lcd_write_string(get_code_string(get_ir_code()));
+    lcd_write_string(get_code_string(last_code));
     //lcd_write_string(" ");
     //lcd_write_int16_hex(get_ir_code());
     lcd_write_string("       ");
-    if(counter++ == 60){
-      pid1.mySetpoint = 150;
-      pid2.mySetpoint = 150;
-    }else if(counter == 120){
-      pid1.mySetpoint = 50;
-      pid2.mySetpoint = 50;
-      counter = 0;
-    }
     delay_ms(100);
   }
 

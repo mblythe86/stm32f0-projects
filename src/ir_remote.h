@@ -70,7 +70,8 @@ typedef enum{
   IR_REC    = 0x37,
   IR_PREV   = 0x12,
   IR_TEXT   = 0x0a,
-  IR_CC     = 0x0e
+  IR_CC     = 0x0e,
+  IR_NOT_NEW = 0xff
 } Ir_button_t;
 
 void        ir_init();

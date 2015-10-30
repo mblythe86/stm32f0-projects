@@ -54,7 +54,9 @@ void ir_short(int pin);
 void ir_long(int pin);
 
 int get_ir_code(){
-  return Ir_code;
+  int tmp = Ir_code;
+  Ir_code = IR_NOT_NEW;
+  return tmp;
 }
 
 Ir_return_t do_ir(){
