@@ -63,8 +63,8 @@ void SysTick_Handler(void) {
     pid2.myInput = (int16_t)get_position(TIM3); //FIXME
     PID_Compute(&pid1);
     PID_Compute(&pid2);
-    servo_set_pos(pid1.myOutput, 1);
-    servo_set_pos(pid2.myOutput, 2);
+    servo_set_pos(pid1.myOutput + 1500, 1);
+    servo_set_pos(pid2.myOutput + 1500, 2);
 
 //    int16_t kp = get_position(TIM2);
 //    kp *= 0x10;
@@ -96,8 +96,8 @@ int main(void) {
   int kd = 0;//kp/4;
   PID_init(&pid1, kp, ki, kd, PID_Direction_Direct);
   PID_init(&pid2, kp, ki, kd, PID_Direction_Reverse);
-  PID_SetOutputLimits(&pid1, 1000, 2000);
-  PID_SetOutputLimits(&pid2, 1000, 2000);
+  PID_SetOutputLimits(&pid1, -500, 500);
+  PID_SetOutputLimits(&pid2, -500, 500);
 //  PID_init(&pid1, 0, 0, 0, PID_Direction_Direct);
   lcd_init();
   encoder_init();
