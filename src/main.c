@@ -47,7 +47,7 @@ void SysTick_Handler(void) {
   //This probably means that we need to do less computation in
   //  the interrupt handler itself!
 
-  do_ir();
+  //do_ir();
 
   //only do this every 100 ms (0.1s)
   if(PidCount++ == 1000){
@@ -105,6 +105,7 @@ int main(void) {
   lcd_init();
   encoder_init();
   servo_init();
+  ir_init();
 //  pwm_set_width(0, 1);
 //  pwm_set_width(0, 2);
   //turn the PID on

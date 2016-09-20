@@ -75,7 +75,8 @@ typedef enum{
 } Ir_button_t;
 
 void        ir_init();
-Ir_return_t do_ir();
+void        EXTI4_15_IRQHandler();
+void        do_ir();
 int         get_ir_code();
 const char* get_code_string(Ir_button_t);
 

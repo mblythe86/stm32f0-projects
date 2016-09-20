@@ -22,6 +22,41 @@ void ir_init() {
   GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
   GPIO_Init(GPIOA, &GPIO_InitStructure);
+
+  //set up pin interrupt on PA5
+  SYSCFG->EXTICR[2] &= ~(SYSCFG_EXTICR2_EXTI5_PA); //clear the register
+  SYSCFG->EXTICR[2] |= SYSCFG_EXTICR2_EXTI5; //set it to listen to PA5
+  EXTI->RTSR |= EXTI_RTSR_TR5; //trigger on rising edge
+  EXTI->FTSR |= EXTI_FTSR_TR5; //trigger on falling edge
+  EXTI->IMR |= EXTI_IMR_MR5; //unmask interrupt
+  NVIC_InitTypeDef NVIC_InitStructure;
+  NVIC_InitStructure.NVIC_IRQChannel = EXTI4_15_IRQn;
+  NVIC_InitStructure.NVIC_IRQChannelPriority = 1; //0 highest, 3 lowest
+  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+  NVIC_Init(&NVIC_InitStructure);
+
+  //we'll use timer TIM16 to see how much time has elapsed between interrupts
+  RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM16, ENABLE);
+  TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
+  TIM_TimeBaseStructure.TIM_Prescaler = 47; //48 = 47+1...counting at 1MHz
+  TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
+  TIM_TimeBaseStructure.TIM_Period = 0xFFFF;
+  TIM_TimeBaseStructure.TIM_ClockDivision = 0;
+  TIM_TimeBaseStructure.TIM_RepetitionCounter = 0;
+  TIM_TimeBaseInit(TIM16, &TIM_TimeBaseStructure);
+
+  TIM_SelectOnePulseMode(TIM16, TIM_OPMode_Single);
+
+  //want to do this frequently:
+  TIM_SetCounter(TIM16, 0);
+  TIM_Cmd(TIM16, ENABLE);
+}
+
+void EXTI4_15_IRQHandler() {
+  do_ir();
+
+  //clear the pending interrupt
+  EXTI->PR |= EXTI_PR_PR5;
 }
 
 typedef enum{
@@ -31,15 +66,14 @@ typedef enum{
 //  HEADER3,  This is logically equivalent to MANCHESTER2
   MANCHESTER1,
   MANCHESTER2,
-  NEW_ERROR,
   IR_ERROR
 } Ir_state_t;
 
 enum{
-  SHORT_MIN = 6,
-  SHORT_MAX = 12,
-  LONG_MIN = 15,
-  LONG_MAX = 20
+  SHORT_MIN = 600,
+  SHORT_MAX = 1200,
+  LONG_MIN = 1500,
+  LONG_MAX = 2000
 };
 
 Ir_state_t Ir_state = IDLE;
@@ -47,8 +81,6 @@ int Bits_read = 0;
 int Ir_code = 0;
 int Ir_code_next = 0;
 int Last_pin = 1; //Since this signal is active-low, 1 is "reset"
-int Call_count = 0;
-int Ir_valid_code;
 
 void ir_short(int pin);
 void ir_long(int pin);
@@ -59,98 +91,85 @@ int get_ir_code(){
   return tmp;
 }
 
-Ir_return_t do_ir(){
-  Ir_valid_code = 0;
-  //We expect this to be called every 0.1ms
+void do_ir(){
+  //We expect this to be called by the pin change interrupt
 
   //read pin
   int pin = GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_5); //FIXME!!!
+  int delay = TIM_GetCounter(TIM16);
+  TIM_SetCounter(TIM16, 0);
+  TIM_Cmd(TIM16, ENABLE);
 
-  switch(Ir_state){
+  if(delay > LONG_MAX){
+    if(pin == 1 || Ir_state != IDLE){
+      Ir_state = IDLE;
+    }
+  }
+  else if(delay < SHORT_MIN || (delay > SHORT_MAX && delay < LONG_MIN)){
+    if(pin == 1){
+      Ir_state = IDLE;
+    }
+    else{
+      Ir_state = IR_ERROR;
+    }
+  }
+  else{
+    switch(Ir_state){
     case IDLE:
+      Bits_read = 0;
       if(pin == 0){
         Ir_state = HEADER1;
-        Call_count = 0;
       }
       break;
     case HEADER1:
-      if(Call_count > SHORT_MAX){
-        Ir_state = NEW_ERROR;
+      if(delay > SHORT_MAX){
+        Ir_state = IR_ERROR;
       }
       else if(pin == 1){
-        if(Call_count < SHORT_MIN){
-          Ir_state = NEW_ERROR;
-        }
-        else{
-          Ir_state = HEADER2;
-          Call_count = 0;
-        }
+        Ir_state = HEADER2;
       }
       break;
     case HEADER2:
-      if(Call_count > SHORT_MAX){
-        Ir_state = NEW_ERROR;
+      if(delay > SHORT_MAX){
+        Ir_state = IR_ERROR;
       }
       else if(pin == 0){
-        if(Call_count < SHORT_MIN){
-          Ir_state = NEW_ERROR;
-        }
-        else{
-          Ir_state = MANCHESTER2;
-          Call_count = 0;
-          Bits_read = 0;
-          Ir_code_next = 0;
-        }
+        Ir_state = MANCHESTER2;
+        Bits_read = 0;
+        Ir_code_next = 0;
       }
       break;
     case MANCHESTER1:
     case MANCHESTER2:
       if(pin != Last_pin){
-        switch(Call_count){
-          case 6 ... 12: //centered on 9 plus/minus 3 CAREFUL! this is a gcc extension!
-            ir_short(pin);
-            break;
-          case 15 ... 20: //centered on 18 plus/minus 3 CAREFUL! this is a gcc extension!
-            ir_long(pin);
-            break;
-          default:
-            Ir_state = NEW_ERROR;
+        if(delay >= SHORT_MIN && delay <= SHORT_MAX){
+          ir_short(pin);
         }
-        Call_count = 0;
+        else if(delay >= LONG_MIN && delay <= LONG_MAX){
+          ir_long(pin);
+        }
+        else{
+          Ir_state = IR_ERROR;
+        }
       }
-      else if(Call_count > 50){
-        if(pin == 1 && Bits_read == 12 && (Ir_code_next & 0x7c0) == 0x700){
-          Ir_valid_code = 1;
+      //check if we're done
+      if(pin == 1 && Bits_read == 12){
+        if( (Ir_code_next & 0x7c0) == 0x700){
           Ir_code = Ir_code_next & 0x3f;
           Ir_state = IDLE;
         }
         else{
-          Ir_state = NEW_ERROR;
+          Ir_state = IR_ERROR;
         }
       }
       break;
-    case NEW_ERROR:
-      Ir_state = IR_ERROR;
-      //fallthrough
     default: //case IR_ERROR:
-      if(pin == 0){
-        Call_count = 0;
-      }
-      if(pin == 1 && Call_count > 50){
+      if(pin == 1){
         Ir_state = IDLE;
       }
+    }
   }
   Last_pin = pin;
-  Call_count++;
-  if(Ir_state == NEW_ERROR){
-    return IGN_ERROR;
-  }
-  else if(Ir_valid_code){
-    return RESULT;
-  }
-  else{
-    return NO_RESULT;
-  }
 }
 
 void ir_short(int pin){
