@@ -280,6 +280,10 @@ int main(void) {
     lcd_line_four();
     lcd_write_string("IR code: ");
     lcd_write_string(get_code_string(last_code));
+    lcd_write_string(" ");
+    lcd_write_int16(get_ir_state());
+    lcd_write_string(" ");
+    lcd_write_int16(get_ir_bits_read());
     //lcd_write_string(" ");
     //lcd_write_int16_hex(get_ir_code());
     lcd_write_string("       ");

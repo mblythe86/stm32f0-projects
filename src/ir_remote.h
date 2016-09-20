@@ -74,9 +74,21 @@ typedef enum{
   IR_NOT_NEW = 0xff
 } Ir_button_t;
 
+typedef enum{
+  IDLE,
+  HEADER1,
+  HEADER2,
+//  HEADER3,  This is logically equivalent to MANCHESTER2
+  MANCHESTER1,
+  MANCHESTER2,
+  IR_ERROR
+} Ir_state_t;
+
 void        ir_init();
 void        EXTI4_15_IRQHandler();
 void        do_ir();
+Ir_state_t  get_ir_state();
+int         get_ir_bits_read();
 int         get_ir_code();
 const char* get_code_string(Ir_button_t);
 

@@ -50,6 +50,17 @@ void ir_init() {
   //want to do this frequently:
   TIM_SetCounter(TIM16, 0);
   TIM_Cmd(TIM16, ENABLE);
+
+  //stop the timer in debug mode
+  DBGMCU->APB2FZ &= DBGMCU_APB2_FZ_DBG_TIM16_STOP;
+  /* Configure the GPIO_LED pins */
+  RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB, ENABLE);
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  GPIO_Init(GPIOB, &GPIO_InitStructure);
 }
 
 void EXTI4_15_IRQHandler() {
@@ -59,15 +70,6 @@ void EXTI4_15_IRQHandler() {
   EXTI->PR |= EXTI_PR_PR5;
 }
 
-typedef enum{
-  IDLE,
-  HEADER1,
-  HEADER2,
-//  HEADER3,  This is logically equivalent to MANCHESTER2
-  MANCHESTER1,
-  MANCHESTER2,
-  IR_ERROR
-} Ir_state_t;
 
 enum{
   SHORT_MIN = 600,
@@ -85,6 +87,14 @@ int Last_pin = 1; //Since this signal is active-low, 1 is "reset"
 void ir_short(int pin);
 void ir_long(int pin);
 
+Ir_state_t get_ir_state(){
+  return Ir_state;
+}
+
+int get_ir_bits_read(){
+  return Bits_read;
+}
+
 int get_ir_code(){
   int tmp = Ir_code;
   Ir_code = IR_NOT_NEW;
@@ -99,6 +109,13 @@ void do_ir(){
   int delay = TIM_GetCounter(TIM16);
   TIM_SetCounter(TIM16, 0);
   TIM_Cmd(TIM16, ENABLE);
+
+  if(Ir_state != IDLE && Ir_state != IR_ERROR){
+    GPIOB->ODR |= GPIO_Pin_2;
+  }
+  else{
+    GPIOB->ODR &= ~(GPIO_Pin_2);
+  }
 
   if(delay > LONG_MAX){
     if(pin == 1 || Ir_state != IDLE){
@@ -116,7 +133,6 @@ void do_ir(){
   else{
     switch(Ir_state){
     case IDLE:
-      Bits_read = 0;
       if(pin == 0){
         Ir_state = HEADER1;
       }
