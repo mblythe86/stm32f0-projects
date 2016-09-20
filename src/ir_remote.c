@@ -79,10 +79,12 @@ enum{
 };
 
 Ir_state_t Ir_state = IDLE;
-int Bits_read = 0;
-int Ir_code = 0;
-int Ir_code_next = 0;
-int Last_pin = 1; //Since this signal is active-low, 1 is "reset"
+volatile int Bits_read = 0;
+volatile int Ir_code = 0;
+volatile int Ir_code_next = 0;
+volatile int Last_pin = 1; //Since this signal is active-low, 1 is "reset"
+volatile int32_t record[40];
+volatile int idx;
 
 void ir_short(int pin);
 void ir_long(int pin);
@@ -110,12 +112,21 @@ void do_ir(){
   TIM_SetCounter(TIM16, 0);
   TIM_Cmd(TIM16, ENABLE);
 
-  if(Ir_state != IDLE && Ir_state != IR_ERROR){
-    GPIOB->ODR |= GPIO_Pin_2;
+  if(delay ==0){
+    //the timer has wrapped, start our record over
+    idx = 0;
   }
-  else{
-    GPIOB->ODR &= ~(GPIO_Pin_2);
-  }
+  record[idx] = 0;
+  record[idx] = pin <<8;
+  record[idx] |= ((delay/100)-5)&0xff;
+  idx++;
+
+  //if(pin == Last_pin){
+  //  GPIOB->ODR |= GPIO_Pin_2;
+  //}
+  //else{
+  //  GPIOB->ODR &= ~(GPIO_Pin_2);
+  //}
 
   if(delay > LONG_MAX){
     if(pin == 1 || Ir_state != IDLE){
@@ -124,10 +135,10 @@ void do_ir(){
   }
   else if(delay < SHORT_MIN || (delay > SHORT_MAX && delay < LONG_MIN)){
     if(pin == 1){
-      Ir_state = IDLE;
+      Ir_state = IR_ERROR;
     }
     else{
-      Ir_state = IR_ERROR;
+      Ir_state = IDLE;
     }
   }
   else{

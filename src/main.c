@@ -256,6 +256,7 @@ int main(void) {
     }
 
     lcd_line_one();
+    if(0){
     //    lcd_write_string("TIM2: ");
 //    lcd_write_int16(get_position(TIM2));
 //    lcd_write_string("  ");
@@ -287,7 +288,43 @@ int main(void) {
     //lcd_write_string(" ");
     //lcd_write_int16_hex(get_ir_code());
     lcd_write_string("       ");
+    }
+
+    for(int i=0; i<20 && i<idx; i++){
+      lcd_write_int16(record[i]>>8);
+    }
+    lcd_line_two();
+    for(int i=0; i<20 && i<idx; i++){
+      if(record[i] & 0xf0){
+        lcd_write_string("Z");
+      }
+      else if((record[i] & 0xf) <= 9){
+        lcd_write_int16(record[i]&0xf);
+      }
+      else{
+        lcd_write_data((record[i]&0xf) - 0xa + 'A');
+      }
+    }
+    lcd_line_three();
+    for(int i=20; i<40 && i<idx; i++){
+      lcd_write_int16(record[i]>>8);
+    }
+    lcd_write_string("       ");
+    lcd_line_four();
+    for(int i=20; i<40 && i<idx; i++){
+      if(record[i] & 0xf0){
+        lcd_write_string("Z");
+      }
+      else if((record[i] & 0xf) <= 9){
+        lcd_write_int16(record[i]&0xf);
+      }
+      else{
+        lcd_write_data((record[i]&0xf) - 0xa + 'A');
+      }
+    }
+    lcd_write_string("       ");
     delay_ms(100);
+
   }
 
 }

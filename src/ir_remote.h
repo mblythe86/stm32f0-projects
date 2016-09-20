@@ -84,6 +84,9 @@ typedef enum{
   IR_ERROR
 } Ir_state_t;
 
+extern volatile int32_t record[40];
+extern volatile int idx;
+
 void        ir_init();
 void        EXTI4_15_IRQHandler();
 void        do_ir();
