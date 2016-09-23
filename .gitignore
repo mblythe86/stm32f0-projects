@@ -19,6 +19,8 @@ program
 .project
 .cproject
 *~
+*.swp
+*.bak
 
 # Log files #
 #############
