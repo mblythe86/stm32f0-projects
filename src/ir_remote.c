@@ -141,59 +141,57 @@ void do_ir(){
       Ir_state = IDLE;
     }
   }
-  else{
-    switch(Ir_state){
-    case IDLE:
-      if(pin == 0){
-        Ir_state = HEADER1;
+  switch(Ir_state){
+  case IDLE:
+    if(pin == 0){
+      Ir_state = HEADER1;
+    }
+    break;
+  case HEADER1:
+    if(delay > SHORT_MAX){
+      Ir_state = IR_ERROR;
+    }
+    else if(pin == 1){
+      Ir_state = HEADER2;
+    }
+    break;
+  case HEADER2:
+    if(delay > SHORT_MAX){
+      Ir_state = IR_ERROR;
+    }
+    else if(pin == 0){
+      Ir_state = MANCHESTER2;
+      Bits_read = 0;
+      Ir_code_next = 0;
+    }
+    break;
+  case MANCHESTER1:
+  case MANCHESTER2:
+    if(pin != Last_pin){
+      if(delay >= SHORT_MIN && delay <= SHORT_MAX){
+        ir_short(pin);
       }
-      break;
-    case HEADER1:
-      if(delay > SHORT_MAX){
+      else if(delay >= LONG_MIN && delay <= LONG_MAX){
+        ir_long(pin);
+      }
+      else{
         Ir_state = IR_ERROR;
       }
-      else if(pin == 1){
-        Ir_state = HEADER2;
-      }
-      break;
-    case HEADER2:
-      if(delay > SHORT_MAX){
-        Ir_state = IR_ERROR;
-      }
-      else if(pin == 0){
-        Ir_state = MANCHESTER2;
-        Bits_read = 0;
-        Ir_code_next = 0;
-      }
-      break;
-    case MANCHESTER1:
-    case MANCHESTER2:
-      if(pin != Last_pin){
-        if(delay >= SHORT_MIN && delay <= SHORT_MAX){
-          ir_short(pin);
-        }
-        else if(delay >= LONG_MIN && delay <= LONG_MAX){
-          ir_long(pin);
-        }
-        else{
-          Ir_state = IR_ERROR;
-        }
-      }
-      //check if we're done
-      if(pin == 1 && Bits_read == 12){
-        if( (Ir_code_next & 0x7c0) == 0x700){
-          Ir_code = Ir_code_next & 0x3f;
-          Ir_state = IDLE;
-        }
-        else{
-          Ir_state = IR_ERROR;
-        }
-      }
-      break;
-    default: //case IR_ERROR:
-      if(pin == 1){
+    }
+    //check if we're done
+    if(pin == 1 && Bits_read == 12){
+      if( (Ir_code_next & 0x7c0) == 0x700){
+        Ir_code = Ir_code_next & 0x3f;
         Ir_state = IDLE;
       }
+      else{
+        Ir_state = IR_ERROR;
+      }
+    }
+    break;
+  default: //case IR_ERROR:
+    if(pin == 1){
+      Ir_state = IDLE;
     }
   }
   Last_pin = pin;

@@ -256,7 +256,7 @@ int main(void) {
     }
 
     lcd_line_one();
-    if(0){
+    if(1){
     //    lcd_write_string("TIM2: ");
 //    lcd_write_int16(get_position(TIM2));
 //    lcd_write_string("  ");
@@ -289,7 +289,7 @@ int main(void) {
     //lcd_write_int16_hex(get_ir_code());
     lcd_write_string("       ");
     }
-
+    else{
     for(int i=0; i<20 && i<idx; i++){
       lcd_write_int16(record[i]>>8);
     }
@@ -323,6 +323,7 @@ int main(void) {
       }
     }
     lcd_write_string("       ");
+    }
     delay_ms(100);
 
   }
