@@ -13,7 +13,7 @@ static __IO uint32_t TimingDelay;
  * @retval None
  */
 void delay_ms(__IO uint32_t nTime) {
-  TimingDelay = nTime*10;
+  TimingDelay = nTime;
 
   while (TimingDelay != 0)
     ;
@@ -43,14 +43,12 @@ PidType pid1;
 PidType pid2;
 
 void SysTick_Handler(void) {
-  //this will be executed every 0.1 ms
+  //this will be executed every 1 ms
   //This probably means that we need to do less computation in
   //  the interrupt handler itself!
 
-  //do_ir();
-
   //only do this every 100 ms (0.1s)
-  if(PidCount++ == 1000){
+  if(PidCount++ == 100){
     PidCount = 0;
 //    PwmCount += 10;
 //    if(PwmCount > 2000){
@@ -89,10 +87,10 @@ typedef enum {
 } Spider_state_t;
 
 int main(void) {
-  /* SysTick end of count event each 0.1ms */
+  /* SysTick end of count event each 1ms */
   RCC_ClocksTypeDef RCC_Clocks;
   RCC_GetClocksFreq(&RCC_Clocks);
-  SysTick_Config(RCC_Clocks.HCLK_Frequency / 10000);
+  SysTick_Config(RCC_Clocks.HCLK_Frequency / 1000);
 
   int kp = 20;
   int ki = 0;//kp/20;
@@ -256,7 +254,6 @@ int main(void) {
     }
 
     lcd_line_one();
-    if(1){
     //    lcd_write_string("TIM2: ");
 //    lcd_write_int16(get_position(TIM2));
 //    lcd_write_string("  ");
@@ -281,49 +278,8 @@ int main(void) {
     lcd_line_four();
     lcd_write_string("IR code: ");
     lcd_write_string(get_code_string(last_code));
-    lcd_write_string(" ");
-    lcd_write_int16(get_ir_state());
-    lcd_write_string(" ");
-    lcd_write_int16(get_ir_bits_read());
-    //lcd_write_string(" ");
-    //lcd_write_int16_hex(get_ir_code());
     lcd_write_string("       ");
-    }
-    else{
-    for(int i=0; i<20 && i<idx; i++){
-      lcd_write_int16(record[i]>>8);
-    }
-    lcd_line_two();
-    for(int i=0; i<20 && i<idx; i++){
-      if(record[i] & 0xf0){
-        lcd_write_string("Z");
-      }
-      else if((record[i] & 0xf) <= 9){
-        lcd_write_int16(record[i]&0xf);
-      }
-      else{
-        lcd_write_data((record[i]&0xf) - 0xa + 'A');
-      }
-    }
-    lcd_line_three();
-    for(int i=20; i<40 && i<idx; i++){
-      lcd_write_int16(record[i]>>8);
-    }
-    lcd_write_string("       ");
-    lcd_line_four();
-    for(int i=20; i<40 && i<idx; i++){
-      if(record[i] & 0xf0){
-        lcd_write_string("Z");
-      }
-      else if((record[i] & 0xf) <= 9){
-        lcd_write_int16(record[i]&0xf);
-      }
-      else{
-        lcd_write_data((record[i]&0xf) - 0xa + 'A');
-      }
-    }
-    lcd_write_string("       ");
-    }
+
     delay_ms(100);
 
   }

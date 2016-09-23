@@ -50,19 +50,9 @@ void ir_init() {
   //want to do this frequently:
   TIM_SetCounter(TIM16, 0);
   TIM_Cmd(TIM16, ENABLE);
-
-  //stop the timer in debug mode
-  DBGMCU->APB2FZ &= DBGMCU_APB2_FZ_DBG_TIM16_STOP;
-  /* Configure the GPIO_LED pins */
-  RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB, ENABLE);
-  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
-  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-  GPIO_Init(GPIOB, &GPIO_InitStructure);
 }
 
+void do_ir();
 void EXTI4_15_IRQHandler() {
   do_ir();
 
@@ -70,6 +60,15 @@ void EXTI4_15_IRQHandler() {
   EXTI->PR |= EXTI_PR_PR5;
 }
 
+typedef enum{
+  IDLE,
+  HEADER1,
+  HEADER2,
+//  HEADER3,  This is logically equivalent to MANCHESTER2
+  MANCHESTER1,
+  MANCHESTER2,
+  IR_ERROR
+} Ir_state_t;
 
 enum{
   SHORT_MIN = 600,
@@ -83,19 +82,6 @@ volatile int Bits_read = 0;
 volatile int Ir_code = 0;
 volatile int Ir_code_next = 0;
 volatile int Last_pin = 1; //Since this signal is active-low, 1 is "reset"
-volatile int32_t record[40];
-volatile int idx;
-
-void ir_short(int pin);
-void ir_long(int pin);
-
-Ir_state_t get_ir_state(){
-  return Ir_state;
-}
-
-int get_ir_bits_read(){
-  return Bits_read;
-}
 
 int get_ir_code(){
   int tmp = Ir_code;
@@ -103,6 +89,8 @@ int get_ir_code(){
   return tmp;
 }
 
+void ir_short(int pin);
+void ir_long(int pin);
 void do_ir(){
   //We expect this to be called by the pin change interrupt
 
@@ -111,22 +99,6 @@ void do_ir(){
   int delay = TIM_GetCounter(TIM16);
   TIM_SetCounter(TIM16, 0);
   TIM_Cmd(TIM16, ENABLE);
-
-  if(delay ==0){
-    //the timer has wrapped, start our record over
-    idx = 0;
-  }
-  record[idx] = 0;
-  record[idx] = pin <<8;
-  record[idx] |= ((delay/100)-5)&0xff;
-  idx++;
-
-  //if(pin == Last_pin){
-  //  GPIOB->ODR |= GPIO_Pin_2;
-  //}
-  //else{
-  //  GPIOB->ODR &= ~(GPIO_Pin_2);
-  //}
 
   if(delay > LONG_MAX){
     if(pin == 1 || Ir_state != IDLE){

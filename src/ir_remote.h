@@ -29,12 +29,6 @@ Chn dn : 101100101011010011010101001 - 011100100001 - 0x721
 #define IR_REMOTE_H_
 
 typedef enum{
-  NO_RESULT,
-  RESULT,
-  IGN_ERROR
-} Ir_return_t;
-
-typedef enum{
   IR_ZERO   = 0x00,
   IR_ONE    = 0x01,
   IR_TWO    = 0x02,
@@ -74,24 +68,8 @@ typedef enum{
   IR_NOT_NEW = 0xff
 } Ir_button_t;
 
-typedef enum{
-  IDLE,
-  HEADER1,
-  HEADER2,
-//  HEADER3,  This is logically equivalent to MANCHESTER2
-  MANCHESTER1,
-  MANCHESTER2,
-  IR_ERROR
-} Ir_state_t;
-
-extern volatile int32_t record[40];
-extern volatile int idx;
-
 void        ir_init();
 void        EXTI4_15_IRQHandler();
-void        do_ir();
-Ir_state_t  get_ir_state();
-int         get_ir_bits_read();
 int         get_ir_code();
 const char* get_code_string(Ir_button_t);
 
